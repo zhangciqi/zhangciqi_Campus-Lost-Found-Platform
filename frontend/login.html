@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>登录 / 注册 - 校园失物招领平台</title>
+<style>
+  body { font-family:"Microsoft YaHei",sans-serif; background:#f4f6f8; display:flex;
+         justify-content:center; align-items:center; height:100vh; margin:0; }
+  .box { background:#fff; padding:32px; border-radius:8px; width:360px;
+         box-shadow:0 2px 8px rgba(0,0,0,.1); }
+  h2 { text-align:center; margin-top:0; }
+  input, select { width:100%; padding:10px; margin:8px 0; border:1px solid #ccc;
+                  border-radius:4px; box-sizing:border-box; }
+  button { width:100%; padding:10px; background:#2e6da4; color:#fff; border:none;
+           border-radius:4px; cursor:pointer; }
+  .tip { text-align:center; margin-top:12px; color:#2e6da4; cursor:pointer; }
+  #msg { color:#c00; text-align:center; min-height:20px; }
+</style>
+</head>
+<body>
+<div class="box">
+  <h2 id="title">登录</h2>
+  <input id="account" placeholder="学号 / 工号">
+  <input id="password" type="password" placeholder="密码">
+  <div id="regFields" style="display:none">
+    <input id="name" placeholder="真实姓名">
+    <input id="phone" placeholder="联系方式（选填）">
+    <select id="role">
+      <option value="student">学生</option>
+      <option value="staff">教职工</option>
+    </select>
+  </div>
+  <button onclick="submitForm()">提交</button>
+  <div class="tip" id="toggleTip" onclick="toggleMode()">没有账号？去注册</div>
+  <div id="msg"></div>
+</div>
+<script>
+let isLogin = true;
+function toggleMode() {
+  isLogin = !isLogin;
+  document.getElementById('title').innerText = isLogin ? '登录' : '注册';
+  document.getElementById('regFields').style.display = isLogin ? 'none' : 'block';
+  document.getElementById('toggleTip').innerText = isLogin ? '没有账号？去注册' : '已有账号？去登录';
+}
+async function submitForm() {
+  const account  = document.getElementById('account').value.trim();
+  const password = document.getElementById('password').value;
+  const msg = document.getElementById('msg');
+  if (!account || !password) { msg.innerText = '账号和密码不能为空'; return; }
+  const url  = isLogin ? '/api/auth/login' : '/api/auth/register';
+  const body = { account, password };
+  if (!isLogin) {
+    body.name  = document.getElementById('name').value.trim();
+    body.phone = document.getElementById('phone').value.trim();
+    body.role  = document.getElementById('role').value;
+    if (!body.name) { msg.innerText = '姓名不能为空'; return; }
+  }
+  const res  = await fetch(url, { method:'POST',
+    headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  const data = await res.json();
+  if (res.ok) {
+    if (isLogin) {
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('role', data.role);
+      location.href = 'index.html';
+    } else {
+      msg.style.color = 'green';
+      msg.innerText = '注册成功，请登录';
+      toggleMode();
+    }
+  } else {
+    msg.innerText = data.detail || '操作失败';
+  }
+}
+</script>
+</body>
+</html>

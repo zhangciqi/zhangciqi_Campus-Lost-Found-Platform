@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>物品详情 - 校园失物招领平台</title>
+<style>
+  body { font-family:"Microsoft YaHei",sans-serif; background:#f4f6f8; margin:0; }
+  header { background:#2e6da4; color:#fff; padding:14px 24px; }
+  header a { color:#fff; text-decoration:none; }
+  .card { background:#fff; margin:24px auto; padding:24px; width:560px; border-radius:8px; }
+  .photos img { width:120px; height:120px; object-fit:cover; margin-right:8px;
+                border-radius:4px; }
+  textarea { width:100%; box-sizing:border-box; padding:8px; border:1px solid #ccc;
+             border-radius:4px; }
+  button { margin-top:12px; padding:10px 20px; background:#2e6da4; color:#fff;
+           border:none; border-radius:4px; cursor:pointer; }
+  #msg { color:#c00; margin-top:8px; }
+</style>
+</head>
+<body>
+<header><a href="index.html">← 返回首页</a></header>
+<div class="card" id="detail">加载中…</div>
+<div class="card" id="claimBox" style="display:none">
+  <h3>提交认领申请</h3>
+  <p>请描述只有失主才知道的物品特征，管理员将据此核实。</p>
+  <textarea id="claim_detail" rows="4"></textarea>
+  <button onclick="submitClaim()">提交认领</button>
+  <div id="msg"></div>
+</div>
+<script>
+const itemId = new URLSearchParams(location.search).get('id');
+const token  = localStorage.getItem('token');
+
+async function loadDetail() {
+  const res = await fetch('/api/items/' + itemId);
+  const it  = await res.json();
+  if (!res.ok) { document.getElementById('detail').innerText = '信息不存在'; return; }
+  let imgs = '';
+  if (it.photos) it.photos.split(',').forEach(p => { if (p) imgs += '<img src="' + p + '">'; });
+  document.getElementById('detail').innerHTML =
+    '<h2>' + it.item_name + '</h2>' +
+    '<p><b>类型：</b>' + (it.info_type === 'lost' ? '失物' : '招领') + ' / ' + it.item_type + '</p>' +
+    '<p><b>地点：</b>' + it.location + '</p>' +
+    '<p><b>时间：</b>' + it.event_time + '</p>' +
+    '<p><b>描述：</b>' + (it.description || '无') + '</p>' +
+    '<div class="photos">' + imgs + '</div>';
+  if (token && it.item_status === 'unclaimed')
+    document.getElementById('claimBox').style.display = 'block';
+}
+
+async function submitClaim() {
+  const detail = document.getElementById('claim_detail').value.trim();
+  const msg = document.getElementById('msg');
+  if (!detail) { msg.innerText = '请填写认领说明'; return; }
+  const res  = await fetch('/api/claims', { method:'POST',
+    headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer ' + token },
+    body: JSON.stringify({ item_id: Number(itemId), claim_detail: detail }) });
+  const data = await res.json();
+  msg.innerText = res.ok ? '认领申请已提交，请等待管理员确认' : (data.detail || '提交失败');
+  if (res.ok) msg.style.color = 'green';
+}
+loadDetail();
+</script>
+</body>
+</html>

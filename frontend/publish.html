@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>发布信息 - 校园失物招领平台</title>
+<style>
+  body { font-family:"Microsoft YaHei",sans-serif; background:#f4f6f8; margin:0; }
+  header { background:#2e6da4; color:#fff; padding:14px 24px; }
+  header a { color:#fff; text-decoration:none; }
+  form { background:#fff; margin:24px auto; padding:24px; width:520px; border-radius:8px; }
+  label { display:block; margin-top:14px; }
+  input, select, textarea { width:100%; padding:8px; border:1px solid #ccc;
+                            border-radius:4px; box-sizing:border-box; }
+  button { margin-top:18px; padding:10px 20px; background:#2e6da4; color:#fff;
+           border:none; border-radius:4px; cursor:pointer; }
+  #msg { text-align:center; margin-top:10px; color:#c00; }
+</style>
+</head>
+<body>
+<header><a href="index.html">← 返回首页</a></header>
+<form onsubmit="return submitForm(event)">
+  <h2>发布失物 / 招领信息</h2>
+  <label>信息类型</label>
+  <select id="info_type">
+    <option value="lost">失物</option>
+    <option value="found">招领</option>
+  </select>
+  <label>物品名称</label>
+  <input id="item_name">
+  <label>物品类型</label>
+  <select id="item_type">
+    <option>电子产品</option><option>证件</option>
+    <option>书籍</option><option>生活用品</option><option>其他</option>
+  </select>
+  <label>地点</label>
+  <input id="location">
+  <label>时间</label>
+  <input id="event_time" type="datetime-local">
+  <label>详细描述</label>
+  <textarea id="description" rows="4"
+    placeholder="例：今天下午在图书馆三楼捡到一个黑色华为手机，屏幕有点划痕"></textarea>
+  <label>照片（最多3张，仅 jpg/png，单张不超过 5MB）</label>
+  <input id="photos" type="file" accept=".jpg,.jpeg,.png" multiple>
+  <button type="submit">提交发布</button>
+  <div id="msg"></div>
+</form>
+<script>
+const token = localStorage.getItem('token');
+if (!token) location.href = 'login.html';
+
+async function submitForm(e) {
+  e.preventDefault();
+  const fd = new FormData();
+  ['info_type','item_name','item_type','location','event_time','description']
+    .forEach(id => fd.append(id, document.getElementById(id).value));
+  const files = document.getElementById('photos').files;
+  if (files.length > 3) {
+    document.getElementById('msg').innerText = '最多上传3张照片';
+    return false;
+  }
+  for (const f of files) fd.append('photos', f);
+  const res  = await fetch('/api/items', { method:'POST',
+    headers:{ 'Authorization':'Bearer ' + token }, body: fd });
+  const data = await res.json();
+  const msg  = document.getElementById('msg');
+  msg.innerText = res.ok ? '提交成功，等待管理员审核' : (data.detail || '提交失败');
+  if (res.ok) {
+    msg.style.color = 'green';
+    setTimeout(() => location.href = 'index.html', 1200);
+  }
+  return false;
+}
+</script>
+</body>
+</html>

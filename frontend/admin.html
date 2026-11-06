@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>管理后台 - 校园失物招领平台</title>
+<style>
+  body { font-family:"Microsoft YaHei",sans-serif; margin:0; background:#f4f6f8; }
+  header { background:#333; color:#fff; padding:14px 24px;
+           display:flex; justify-content:space-between; }
+  header a { color:#fff; text-decoration:none; }
+  .panel { background:#fff; margin:24px; padding:16px; border-radius:8px; }
+  table { width:100%; border-collapse:collapse; }
+  td, th { border:1px solid #ddd; padding:8px; text-align:left; }
+  .op { color:#2e6da4; cursor:pointer; margin-right:12px; }
+</style>
+</head>
+<body>
+<header>
+  <div>管理后台 · 待审核</div>
+  <a href="#" onclick="logout()">退出登录</a>
+</header>
+<div class="panel" id="panel">加载中…</div>
+<script>
+const token = localStorage.getItem('token');
+const role  = localStorage.getItem('role');
+if (!token || role !== 'admin') location.href = 'login.html';
+
+async function loadPending() {
+  const res  = await fetch('/api/admin/items',
+    { headers:{ 'Authorization':'Bearer ' + token } });
+  const data = await res.json();
+  let html = '<table><tr><th>ID</th><th>信息类型</th><th>物品名称</th>' +
+             '<th>物品类型</th><th>地点</th><th>时间</th><th>操作</th></tr>';
+  (data.items || []).forEach(it => {
+    html += '<tr><td>' + it.item_id + '</td>' +
+      '<td>' + (it.info_type === 'lost' ? '失物' : '招领') + '</td>' +
+      '<td>' + it.item_name + '</td><td>' + it.item_type + '</td>' +
+      '<td>' + it.location + '</td><td>' + it.event_time + '</td>' +
+      '<td><span class="op" onclick="review(' + it.item_id + ',\'approve\')">通过</span>' +
+      '<span class="op" onclick="review(' + it.item_id + ',\'reject\')">驳回</span></td></tr>';
+  });
+  html += '</table>';
+  document.getElementById('panel').innerHTML =
+    (data.items && data.items.length) ? html : '<p>当前没有待审核的信息</p>';
+}
+
+async function review(id, action) {
+  const res = await fetch('/api/admin/items/' + id + '/review', {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer ' + token },
+    body: JSON.stringify({ action })
+  });
+  if (res.ok) loadPending();
+  else alert('操作失败，请重试');
+}
+
+function logout() { localStorage.clear(); location.href = 'login.html'; }
+loadPending();
+</script>
+</body>
+</html>
