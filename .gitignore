@@ -1,0 +1,18 @@
+# Python 缓存
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# 上传的图片（运行时生成）
+backend/uploads/items/*
+
+# 编辑器与系统文件
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+
+# 临时文件
+*.log
+*.tmp
+~$*.docx
